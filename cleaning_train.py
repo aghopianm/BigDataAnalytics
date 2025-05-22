@@ -541,20 +541,30 @@ def standardize_categorical_features(df):
     Returns:
         DataFrame: DataFrame with standardized categorical variables
     """
-    # Property type standardization
-    property_type_mapping = {
-        'apt': 'apartment',
-        'apartment': 'apartment',
-        'flat': 'apartment',
-        'condo': 'condominium',
-        # ...existing mappings...
+    df_copy = df.copy()
+    
+    # Construction type standardization
+    construction_mapping = {
+        'stone': 'Stone',
+        'monolith': 'Monolith',
+        'panels': 'Panels',
+        'bricks': 'Bricks',
+        'cassette': 'Cassette',
+        'wooden': 'Wooden'
     }
     
-    # Standardize property types using the mapping
-    df['property_type'] = df['property_type'].str.lower().map(property_type_mapping)
+    # Apply standardization to categorical columns if they exist
+    if 'Construction_type' in df_copy.columns:
+        df_copy['Construction_type'] = df_copy['Construction_type'].fillna('Unknown')
+        df_copy['Construction_type'] = df_copy['Construction_type'].str.lower().map(construction_mapping)
     
-    # Standardize other categorical variables following similar patterns
-    # ...existing code...
+    # Standardize other categorical variables if needed
+    categorical_columns = ['Balcony', 'Renovation', 'Furniture', 'amenities', 'appliances', 'parking']
+    for col in categorical_columns:
+        if col in df_copy.columns:
+            df_copy[col] = df_copy[col].fillna('Not available')
+    
+    return df_copy
 
 # Now you can call these standardization functions as needed on your DataFrame columns
 # For example:
@@ -583,10 +593,10 @@ def validate_numeric_ranges(df):
     # Price validation
     # Check for unreasonable prices (too low or too high)
     price_stats = {
-        'mean': df['price_usd'].mean(),
-        'std': df['price_usd'].std(),
-        'min': df['price_usd'].min(),
-        'max': df['price_usd'].max()
+        'mean': df['Price_USD'].mean(),
+        'std': df['Price_USD'].std(),
+        'min': df['Price_USD'].min(),
+        'max': df['Price_USD'].max()
     }
     
     # Define reasonable price ranges (e.g., 3 standard deviations from mean)
@@ -595,8 +605,8 @@ def validate_numeric_ranges(df):
     
     # Flag and handle price outliers
     price_outliers = df[
-        (df['price_usd'] < price_lower_bound) | 
-        (df['price_usd'] > price_upper_bound)
+        (df['Price_USD'] < price_lower_bound) | 
+        (df['Price_USD'] > price_upper_bound)
     ]
     validation_summary['price_outliers'] = len(price_outliers)
     
