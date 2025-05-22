@@ -17,6 +17,10 @@ import seaborn as sns
 from transliterate import translit
 from transliterate.base import TranslitLanguagePack, registry
 
+## KERNEL RIDGE REGRESSION AND SUPPORT VECTOR REGRESSION 
+## AS THEY ARE GOOD AT CAPTURING NON-LINEAR RELATIONSHIPS 
+## BUT ARE REGRESSION TASKS SO GOOD AT CAPUTRING PRICE
+
 # =====================================
 # Data Loading and Initial Cleaning
 # =====================================
@@ -200,7 +204,7 @@ models = {
     # 1. Computational Complexity: O(n²) to O(n³), making it impractical for our dataset size of 32,563 samples
     # 2. Memory Usage: Requires storing the kernel matrix of size n×n, which would need ~8.5GB RAM
     # 3. Training Time: Would take several hours to train on this dataset size
-    # 'Support Vector Regressor': SVR(kernel='rbf', C=1.0, epsilon=0.1),
+    'Support Vector Regressor': SVR(kernel='rbf', C=1.0, epsilon=0.1),
     
     # Gaussian Naive Bayes is commented out for the following reasons:
     # 1. Not Suitable for Regression: GNB is a classification algorithm, not designed for continuous target variables
