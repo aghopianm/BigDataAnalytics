@@ -17,9 +17,95 @@ import seaborn as sns
 from transliterate import translit
 from transliterate.base import TranslitLanguagePack, registry
 
-## KERNEL RIDGE REGRESSION AND SUPPORT VECTOR REGRESSION 
-## AS THEY ARE GOOD AT CAPTURING NON-LINEAR RELATIONSHIPS 
-## BUT ARE REGRESSION TASKS SO GOOD AT CAPUTRING PRICE
+# Set style for all plots
+sns.set_style("darkgrid")  # Set seaborn style directly
+plt.style.use('seaborn-v0_8-darkgrid')  # Use specific matplotlib style compatible with seaborn
+
+def plot_feature_importance(model, feature_names, output_path='visualizations/feature_importance.png'):
+    """Plot feature importance from the model"""
+    if hasattr(model, 'feature_importances_'):
+        importance = model.feature_importances_
+        
+        # Sort feature importances in descending order
+        indices = np.argsort(importance)[::-1]
+        
+        plt.figure(figsize=(12, 6))
+        plt.title('Feature Importances')
+        plt.bar(range(len(indices)), importance[indices])
+        plt.xticks(range(len(indices)), [feature_names[i] for i in indices], rotation=45, ha='right')
+        plt.tight_layout()
+        plt.savefig(output_path)
+        plt.close()
+
+def plot_prediction_scatter(y_true, y_pred, output_path='visualizations/prediction_scatter.png'):
+    """Plot scatter plot of predicted vs actual values"""
+    plt.figure(figsize=(10, 6))
+    plt.scatter(y_true, y_pred, alpha=0.5)
+    plt.plot([y_true.min(), y_true.max()], [y_true.min(), y_true.max()], 'r--', lw=2)
+    plt.xlabel('Actual Price')
+    plt.ylabel('Predicted Price')
+    plt.title('Predicted vs Actual Prices')
+    plt.tight_layout()
+    plt.savefig(output_path)
+    plt.close()
+
+def plot_residuals(y_true, y_pred, output_path='visualizations/residuals.png'):
+    """Plot residuals analysis"""
+    residuals = y_true - y_pred
+    
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 5))
+    
+    # Residuals distribution
+    sns.histplot(residuals, kde=True, ax=ax1)
+    ax1.set_title('Residuals Distribution')
+    ax1.set_xlabel('Residual Value')
+    
+    # Residuals vs Predicted
+    ax2.scatter(y_pred, residuals, alpha=0.5)
+    ax2.axhline(y=0, color='r', linestyle='--')
+    ax2.set_title('Residuals vs Predicted Values')
+    ax2.set_xlabel('Predicted Price')
+    ax2.set_ylabel('Residual')
+    
+    plt.tight_layout()
+    plt.savefig(output_path)
+    plt.close()
+
+def plot_model_comparison(model_scores, output_path='visualizations/model_comparison.png'):
+    """Plot model comparison"""
+    plt.figure(figsize=(12, 6))
+    
+    # Sort models by R² score
+    model_scores = {k: v for k, v in sorted(model_scores.items(), key=lambda item: item[1]['R2'], reverse=True)}
+    
+    models = list(model_scores.keys())
+    r2_scores = [scores['R2'] for scores in model_scores.values()]
+    mse_scores = [scores['MSE'] for scores in model_scores.values()]
+    
+    x = np.arange(len(models))
+    width = 0.35
+    
+    fig, ax1 = plt.subplots(figsize=(15, 6))
+    ax2 = ax1.twinx()
+    
+    # Plot R² scores
+    rects1 = ax1.bar(x - width/2, r2_scores, width, label='R² Score', color='skyblue')
+    ax1.set_ylabel('R² Score')
+    
+    # Plot MSE scores
+    rects2 = ax2.bar(x + width/2, mse_scores, width, label='MSE', color='lightcoral')
+    ax2.set_ylabel('Mean Squared Error')
+    
+    ax1.set_xticks(x)
+    ax1.set_xticklabels(models, rotation=45, ha='right')
+    
+    ax1.legend(loc='upper left')
+    ax2.legend(loc='upper right')
+    
+    plt.title('Model Comparison')
+    plt.tight_layout()
+    plt.savefig(output_path)
+    plt.close()
 
 # =====================================
 # Data Loading and Initial Cleaning
@@ -293,6 +379,51 @@ for model_name, model in models.items():
 results_df = pd.DataFrame.from_dict(model_performances, orient='index')
 results_df.to_csv('model_comparison_results.csv')
 print("\nModel comparison results saved to 'model_comparison_results.csv'")
+
+# Create visualizations directory if it doesn't exist
+import os
+if not os.path.exists('visualizations'):
+    os.makedirs('visualizations')
+
+print("\nGenerating model performance visualizations...")
+
+# Plot model comparison
+plot_model_comparison(model_performances)
+
+# Get best model
+best_model_name = results_df.sort_values('R2', ascending=False).index[0]
+best_model = models[best_model_name]
+
+# Get predictions from best model for visualization
+y_pred_best = best_model.predict(X_test_transformed)
+
+# Plot predictions vs actual values
+plot_prediction_scatter(y_test, y_pred_best)
+
+# Plot residuals analysis
+plot_residuals(y_test, y_pred_best)
+
+# Plot feature importance if available
+if hasattr(best_model, 'feature_importances_'):
+    plot_feature_importance(best_model, preprocessor.get_feature_names_out())
+elif 'Random Forest' in models:
+    # Fallback to Random Forest for feature importance
+    rf_model = models['Random Forest']
+    rf_model.fit(X_train_transformed, y_train)
+    plot_feature_importance(rf_model, preprocessor.get_feature_names_out())
+
+# Plot feature importance for the best model
+if hasattr(best_model, 'feature_importances_'):
+    plot_feature_importance(model_for_importance, preprocessor.get_feature_names_out())
+
+# Plot predictions vs actual values
+y_pred_best = best_model.predict(X_test_transformed)
+plot_prediction_scatter(y_test, y_pred_best)
+
+# Plot residuals analysis
+plot_residuals(y_test, y_pred_best)
+
+print("Visualizations saved in 'visualizations' directory")
 
 # Save preprocessed data to CSV
 preprocessed_train = pd.DataFrame(

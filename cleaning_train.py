@@ -12,6 +12,86 @@
 
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import os
+
+sns.set_style("darkgrid")  # Set seaborn style directly
+plt.style.use('seaborn-v0_8-darkgrid')  # Use specific matplotlib style compatible with seaborn
+
+def generate_all_visualizations(df, output_dir='visualizations'):
+    """Generate all visualizations and save them to the specified directory"""
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    
+    # Plot missing values
+    plot_missing_values(df, f'{output_dir}/missing_values.png')
+    
+    # Plot price distribution
+    plot_distribution_comparison(df, 'Price_USD', 'Price Distribution', f'{output_dir}/price_distribution.png')
+    
+    # Plot categorical distributions and relationships
+    plot_categorical_counts(df, 'Construction_type', 'Construction Types', f'{output_dir}/construction_types.png')
+    plot_categorical_counts(df, 'Renovation', 'Renovation Types', f'{output_dir}/renovation_types.png')
+    
+    # Plot price relationships
+    plot_price_by_category(df, 'Construction_type', f'{output_dir}/price_by_construction.png')
+    plot_price_by_category(df, 'Renovation', f'{output_dir}/price_by_renovation.png')
+
+def plot_distribution_comparison(df, column, title, output_path):
+    """Plot distribution of values before and after cleaning"""
+    plt.figure(figsize=(12, 5))
+    
+    # Before cleaning
+    plt.subplot(1, 2, 1)
+    sns.histplot(df[column], bins=30)
+    plt.title(f'Before Cleaning: {title}')
+    
+    # After cleaning
+    plt.subplot(1, 2, 2)
+    clean_data = df[df[column].notna()]
+    sns.histplot(clean_data[column], bins=30)
+    plt.title(f'After Cleaning: {title}')
+    
+    plt.tight_layout()
+    plt.savefig(output_path)
+    plt.close()
+
+def plot_missing_values(df, output_path):
+    """Plot missing values in the dataset"""
+    plt.figure(figsize=(10, 6))
+    missing = df.isnull().sum().sort_values(ascending=True)
+    missing = missing[missing > 0]
+    missing.plot(kind='barh')
+    plt.title('Missing Values by Column')
+    plt.xlabel('Count')
+    plt.tight_layout()
+    plt.savefig(output_path)
+    plt.close()
+
+def plot_categorical_counts(df, column, title, output_path):
+    """Plot value counts for categorical variables"""
+    plt.figure(figsize=(12, 6))
+    df[column].value_counts().plot(kind='bar')
+    plt.title(f'{title} Distribution')
+    plt.xticks(rotation=45, ha='right')
+    plt.tight_layout()
+    plt.savefig(output_path)
+    plt.close()
+
+def plot_price_by_category(df, category_col, output_path):
+    """Plot box plot of prices by category"""
+    plt.figure(figsize=(12, 6))
+    sns.boxplot(x=category_col, y='Price_USD', data=df)
+    plt.xticks(rotation=45, ha='right')
+    plt.title(f'Price Distribution by {category_col}')
+    plt.tight_layout()
+    plt.savefig(output_path)
+    plt.close()
+
+# Create visualizations directory if it doesn't exist
+if not os.path.exists('visualizations'):
+    os.makedirs('visualizations')
 
 # ===========================================================================
 # Data Loading and Initial Inspection
@@ -352,6 +432,32 @@ print(missing[missing > 0])
 print("\nSample of cleaned data:")
 print(df_cleaned.head())
 
+# Print cleaning summary
+print("\nData Cleaning Summary:")
+print("--------------------")
+missing = df_cleaned.isnull().sum()
+print("\nMissing values by column:")
+print(missing[missing > 0])
+
+# Generate visualizations
+print("\nGenerating data cleaning visualizations...")
+
+# Plot missing values
+plot_missing_values(df_cleaned, 'visualizations/missing_values.png')
+
+# Plot price distributions
+plot_distribution_comparison(df_cleaned, 'Price_USD', 'Price Distribution', 'visualizations/price_distribution.png')
+
+# Plot categorical distributions
+plot_categorical_counts(df_cleaned, 'Construction_type', 'Construction Types', 'visualizations/construction_types.png')
+plot_categorical_counts(df_cleaned, 'Renovation', 'Renovation Types', 'visualizations/renovation_types.png')
+
+# Plot price by categories
+plot_price_by_category(df_cleaned, 'Construction_type', 'visualizations/price_by_construction.png')
+plot_price_by_category(df_cleaned, 'Renovation', 'visualizations/price_by_renovation.png')
+
+print("Visualizations saved in 'visualizations' directory")
+
 # Save cleaned data
 output_file = 'apartment_for_rent_train_cleaned.csv'
 df_cleaned.to_csv(output_file, index=False)
@@ -566,12 +672,6 @@ def standardize_categorical_features(df):
     
     return df_copy
 
-# Now you can call these standardization functions as needed on your DataFrame columns
-# For example:
-# df['Area'] = df['Area'].apply(standardize_area_values)
-# df['Price'] = df['Price'].apply(standardize_price)
-# df = standardize_categorical_features(df)
-
 # ===========================================================================
 # Data Validation and Quality Checks
 # ===========================================================================
@@ -680,7 +780,12 @@ if __name__ == "__main__":
     print(f"Final rows: {cleaning_summary['rows_final']}")
     print(f"Columns modified: {len(cleaning_summary['columns_modified'])}")
     print(f"Price outliers identified: {validation_results['price_outliers']}")
-    
+
+    # Generate visualizations
+    print("\nGenerating visualizations...")
+    generate_all_visualizations(df_final)
+    print("Visualizations saved in 'visualizations' directory")
+
     # Export cleaned dataset
     output_path = "apartment_for_rent_train_cleaned.csv"
     df_final.to_csv(output_path, index=False)
